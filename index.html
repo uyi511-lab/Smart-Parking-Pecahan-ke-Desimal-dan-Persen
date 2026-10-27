@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Parkir Pintar – Pecahan, Desimal & Persen</title>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js" crossorigin="anonymous"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;font-family:"Trebuchet MS","Comic Sans MS",system-ui,sans-serif;color:#fff;background:#5ec8f2}
+#bg{position:fixed;inset:0;z-index:0;background:linear-gradient(#7fd8ff 0,#c9f0ff 35%,#8fd16a 35.1%,#6dbb4a 100%)}
+.cloud{position:absolute;font-size:9vmin;animation:drift 40s linear infinite}
+@keyframes drift{from{left:-15%}to{left:110%}}
+.screen{position:fixed;inset:0;display:none;z-index:2;flex-direction:column;align-items:center;justify-content:center;padding:2vmin;overflow:auto;text-align:center}
+.screen.on{display:flex}
+.card{background:rgba(30,40,90,.82);border:4px solid #fff;border-radius:28px;padding:clamp(14px,3vmin,32px);max-width:920px;width:100%;box-shadow:0 10px 0 rgba(0,0,0,.2)}
+h1{font-size:clamp(26px,6vmin,56px);color:#ffe066;text-shadow:0 4px 0 #c0392b;line-height:1.1}
+h2{font-size:clamp(20px,4vmin,34px);color:#ffe066;margin-bottom:1vmin}
+.sub{font-size:clamp(14px,2.6vmin,22px);margin:1vmin 0}
+.info{text-align:left;background:rgba(0,0,0,.28);border-radius:18px;padding:12px 16px;margin:1.5vmin 0;font-size:clamp(13px,2.3vmin,20px);line-height:1.5}
+.info b{color:#7be8ff}
+.btn{font-family:inherit;font-weight:bold;font-size:clamp(16px,3vmin,28px);color:#3a2200;background:linear-gradient(#ffe066,#ffb627);border:none;border-radius:50px;padding:1.4vmin 4vmin;margin:6px;cursor:pointer;box-shadow:0 6px 0 #b8741a;transition:transform .1s}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 #b8741a}
+.btn.alt{background:linear-gradient(#7be8ff,#2fb4e8);box-shadow:0 6px 0 #1a7aa0;color:#04283a}
+.btn.hov{transform:scale(1.08)}
+#camMsg{font-size:clamp(12px,2.1vmin,18px);min-height:1.4em;color:#9dffb0;margin-top:4px}
+.big-car{font-size:clamp(50px,12vmin,110px);animation:bob 1.2s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-10px) rotate(-3deg)}}
+/* game */
+#game{justify-content:flex-start;gap:.8vmin;padding:1.2vmin}
+#hud{width:100%;max-width:1100px;display:flex;justify-content:space-between;align-items:center;font-size:clamp(14px,2.8vmin,26px);font-weight:bold;gap:8px;padding-right:clamp(0px,17vw,0px)}
+.pill{background:rgba(30,40,90,.85);border-radius:30px;padding:.6vmin 2vmin;white-space:nowrap;border:2px solid #fff}
+#track{position:relative;width:100%;max-width:1100px;height:clamp(50px,9vmin,80px)}
+#line{position:absolute;left:3%;right:3%;top:62%;height:10px;border-radius:5px;background:#444;border-top:2px dashed #ffe066}
+#fill{position:absolute;left:3%;top:62%;height:10px;border-radius:5px;background:#ffe066;width:0;transition:width 1s}
+.node{position:absolute;top:62%;width:clamp(12px,2.2vmin,20px);height:clamp(12px,2.2vmin,20px);border-radius:50%;background:#aaa;transform:translate(-50%,-25%);border:2px solid #fff}
+.node.ok{background:#2ecc40}.node.bad{background:#ff4136}
+.flag{position:absolute;top:0;font-size:clamp(20px,4.5vmin,40px);transform:translateX(-50%)}
+#ship{position:absolute;top:0;font-size:clamp(26px,5.5vmin,48px);transform:translateX(-50%);transition:left 1s ease-in-out;left:3%}
+#qbox{width:100%;max-width:1000px;background:rgba(30,40,90,.88);border:4px solid #fff;border-radius:24px;padding:clamp(8px,1.8vmin,22px);text-align:center}
+#qno{font-size:clamp(12px,2.2vmin,18px);color:#7be8ff;font-weight:bold}
+#qtext{font-size:clamp(19px,4.6vmin,42px);font-weight:bold;margin-top:.4vmin;line-height:1.35}
+#lot{position:relative;width:100%;max-width:1000px;flex:1;min-height:0;background:#3a3f52;border:6px solid #fff;border-radius:22px;display:flex;flex-direction:column;overflow:hidden}
+#opts{flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(6px,1.4vmin,16px);padding:clamp(6px,1.4vmin,16px) clamp(6px,1.4vmin,16px) 0}
+#road{height:clamp(72px,20%,130px);margin-top:clamp(4px,1vmin,12px);background:repeating-linear-gradient(90deg,#ffe066 0 30px,transparent 30px 60px) center/100% 6px no-repeat;position:relative}
+#car{position:absolute;width:clamp(42px,8.5vmin,76px);aspect-ratio:3/5;transform:translate(-50%,-50%) rotate(var(--r,0deg));z-index:6;transition:left .85s ease-in-out,top 1s ease-in-out,transform .3s;filter:drop-shadow(0 6px 4px rgba(0,0,0,.4))}
+#car svg{width:100%;height:100%;display:block}
+#car.shake{animation:cshake .5s}
+@keyframes cshake{25%{transform:translate(-50%,-50%) rotate(-14deg)}75%{transform:translate(-50%,-50%) rotate(14deg)}}
+.cone{position:absolute;z-index:5;font-size:clamp(26px,6vmin,54px);transform:translate(-50%,-50%);animation:pop .4s}
+.ans{position:relative;font-family:inherit;font-weight:bold;font-size:clamp(18px,4.2vmin,38px);color:#fff;background:#4a5068;border:4px dashed #fff;border-bottom:none;border-radius:14px 14px 0 0;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:clamp(6px,1.4vmin,16px);gap:6px;transition:transform .15s,background .2s;min-height:0}
+.ans .pk{font-size:.55em;background:#2f8be0;border-radius:8px;padding:0 .6em;border:2px solid #fff}
+.ans.hov{transform:scale(1.05);border-color:#ffe066;background:#5b6385;box-shadow:0 0 22px #ffe066}
+.ans.right{background:#1f9d3a!important;border-color:#fff}
+.ans.wrong{background:#c0392b!important;animation:shake2 .4s}
+.ans.right::after{content:"✅";position:absolute;top:2px;right:6px;font-size:.7em}
+.ans.wrong::after{content:"❌";position:absolute;top:2px;right:6px;font-size:.7em}
+@keyframes pop{0%{transform:translate(-50%,-50%) scale(.2)}70%{transform:translate(-50%,-50%) scale(1.3)}}
+@keyframes shake2{25%{transform:translateX(-10px)}75%{transform:translateX(10px)}}
+.fr{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.05;margin:0 3px;font-size:.9em}
+.fr b{font-weight:bold;border-bottom:.09em solid currentColor;padding:0 .2em .05em}
+.fr i{font-style:normal;padding:.05em .2em 0}
+#fb{position:fixed;inset:0;z-index:5;background:rgba(10,15,50,.75);display:none;align-items:center;justify-content:center;padding:2vmin}
+#fb.on{display:flex}
+#fbcard{background:#fff;color:#222;border-radius:30px;padding:clamp(16px,3vmin,34px);max-width:720px;width:100%;text-align:center;border:8px solid #2ecc40;animation:zoom .4s}
+@keyframes zoom{from{transform:scale(.6)}}
+#fbcard.bad{border-color:#ff4136}
+#fbt{font-size:clamp(26px,6vmin,52px);font-weight:bold}
+#fbcard:not(.bad) #fbt{color:#1e9e32}#fbcard.bad #fbt{color:#e0281d}
+#fbx{font-size:clamp(15px,3vmin,26px);margin:1.5vmin 0;line-height:1.5}
+#cur{position:fixed;z-index:20;width:54px;height:54px;margin:-27px 0 0 -27px;border-radius:50%;pointer-events:none;display:none;border:4px solid #fff;background:conic-gradient(#ffe066 calc(var(--p,0)*1%),#ffffff55 0);box-shadow:0 0 18px #000a}
+#cur::after{content:"";position:absolute;inset:14px;background:#ff4136;border-radius:50%}
+#cam{position:fixed;right:8px;top:8px;width:clamp(90px,14vw,180px);aspect-ratio:4/3;z-index:15;border-radius:14px;overflow:hidden;border:3px solid #7be8ff;display:none;background:#000}
+#cam video,#cam canvas{position:absolute;inset:0;width:100%;height:100%;transform:scaleX(-1);object-fit:cover}
+.stars3{font-size:clamp(34px,8vmin,70px);letter-spacing:6px}
+.big{font-size:clamp(20px,4.5vmin,40px);margin:.8vmin 0}
+@media (max-width:700px),(max-aspect-ratio:1/1){#opts{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}.ans{border-bottom:4px dashed #fff;border-radius:14px}}
+</style>
+</head>
+<body>
+<div id="bg"><span class="cloud" style="top:4%;animation-delay:-5s">☁️</span><span class="cloud" style="top:12%;animation-delay:-22s">☁️</span></div>
+<div id="cur"></div>
+<div id="cam"><video id="vid" playsinline muted></video><canvas id="ov" width="320" height="240"></canvas></div>
+
+<section class="screen on" id="s-intro"><div class="card">
+ <div class="big-car">🚗🅿️</div>
+ <h1>Parkir Pintar</h1>
+ <div class="sub">Parkirkan kendaraan di tempat yang benar dengan gerakan tangan!</div>
+ <div class="info">
+  <b>Mata Pelajaran:</b> Matematika<br>
+  <b>Materi:</b> Pecahan, Desimal, dan Persen<br>
+  <b>Kelas/Fase:</b> IV SD / Fase B<br>
+  <b>Tujuan Pembelajaran:</b> Menentukan bentuk desimal dan persen dari pecahan persepuluh dan perseratus, serta menentukan bentuk pecahan persepuluh atau perseratus dari desimal dan persen.
+ </div>
+ <button class="btn alt" id="bCam">📷 Aktifkan Kamera</button>
+ <div id="camMsg">Kamera dipakai untuk mendeteksi telunjukmu. Tidak ada video yang disimpan.</div>
+ <button class="btn" id="bHow">▶ Mulai Bermain</button>
+</div></section>
+
+<section class="screen" id="s-how"><div class="card">
+ <h2>📖 Petunjuk Permainan</h2>
+ <div class="info">
+  🧑‍✈️ Kamu pengemudi cilik! Ada <b>15 kendaraan</b> yang harus diparkir.<br>
+  ❓ Baca soal, lalu pilih <b>petak parkir</b> yang berisi jawaban benar.<br>
+  ☝️ <b>Angkat satu tangan</b> di depan kamera, arahkan <b>telunjuk</b> untuk menggerakkan kursor merah.<br>
+  ⏱ <b>Tahan kursor</b> di atas petak sampai lingkaran penuh (±1 detik) untuk memilih.<br>
+  ✅ Benar: kendaraan terparkir, <b>+10 poin</b>. ❌ Salah: menabrak 🚧 dan <b>nyawa ❤️ berkurang</b> (ada 5).<br>
+  🖱 Tanpa kamera? Pakai mouse atau sentuhan layar.<br>
+  💡 Pastikan tangan terlihat jelas dan cahaya cukup.
+ </div>
+ <button class="btn" id="bGo">🚦 Jalan!</button>
+ <button class="btn alt" id="bBack">⬅ Kembali</button>
+</div></section>
+
+<section class="screen" id="game">
+ <div id="hud"><span class="pill">🧑‍✈️ ⭐ <span id="sc">0</span></span><span class="pill" id="hearts"></span><span class="pill">Soal <span id="pg">1</span>/15</span></div>
+ <div id="track"><div id="line"></div><div id="fill"></div><div id="ship">🧑‍✈️</div></div>
+ <div id="qbox"><div id="qno"></div><div id="qtext"></div></div>
+ <div id="lot"><div id="opts"></div><div id="road"></div><div id="car"><svg viewBox="0 0 60 100"><rect x="2" y="16" width="7" height="18" rx="2" fill="#222"/><rect x="51" y="16" width="7" height="18" rx="2" fill="#222"/><rect x="2" y="66" width="7" height="18" rx="2" fill="#222"/><rect x="51" y="66" width="7" height="18" rx="2" fill="#222"/><rect x="6" y="3" width="48" height="94" rx="16" fill="var(--c,#e0457b)" stroke="#fff" stroke-width="2"/><path d="M14 30 L18 20 H42 L46 30 Z" fill="#7be8ff" stroke="#234" stroke-width="1.5"/><rect x="14" y="30" width="32" height="30" rx="4" fill="#fff" opacity=".35"/><rect x="15" y="64" width="30" height="12" rx="3" fill="#5aa9c9" stroke="#234" stroke-width="1.5"/><circle cx="16" cy="9" r="5" fill="#fff36b" stroke="#c90" stroke-width="1.5"/><circle cx="44" cy="9" r="5" fill="#fff36b" stroke="#c90" stroke-width="1.5"/><rect x="12" y="91" width="9" height="4" rx="2" fill="#ff2a2a"/><rect x="39" y="91" width="9" height="4" rx="2" fill="#ff2a2a"/></svg></div></div>
+</section>
+<div id="fb"><div id="fbcard"><div id="fbt"></div><div id="fbx"></div><button class="btn" id="bNext">Lanjut ➡</button></div></div>
+
+<section class="screen" id="s-end"><div class="card">
+ <div class="big-car" id="endIcon">🏆</div>
+ <h1 id="endT">Parkir Selesai!</h1>
+ <div class="stars3" id="endStars"></div>
+ <div class="big">Skor: <b id="eSc" style="color:#ffe066"></b></div>
+ <div class="big">Jawaban benar: <b id="eOk" style="color:#9dffb0"></b> dari 15</div>
+ <div class="sub" id="eMsg"></div>
+ <button class="btn" id="bAgain">🔄 Main Lagi</button>
+ <button class="btn alt" id="bHome">🏠 Beranda</button>
+</div></section>
+
+<script>
+"use strict";
+const Q=[
+["Pecahan {3/10} jika ditulis dalam bentuk desimal adalah ...","0,3",["0,03","3,0","0,13"],"{3/10} dibaca tiga persepuluh = 0,3 (satu angka di belakang koma)."],
+["Pecahan {7/10} sama dengan ... persen.","70%",["7%","17%","0,7%"],"{7/10} = {70/100} = 70%."],
+["Pecahan {9/10} jika ditulis dalam desimal dan persen adalah ...","0,9 = 90%",["0,09 = 9%","0,9 = 9%","9,0 = 90%"],"{9/10} = 0,9 = {90/100} = 90%."],
+["Pecahan {25/100} jika ditulis dalam bentuk desimal adalah ...","0,25",["2,5","0,025","0,52"],"Perseratus memiliki dua angka di belakang koma, jadi {25/100} = 0,25."],
+["Pecahan {47/100} sama dengan ... persen.","47%",["4,7%","74%","0,47%"],"Persen berarti per seratus, jadi {47/100} = 47%."],
+["Pecahan {5/100} jika ditulis dalam desimal dan persen adalah ...","0,05 = 5%",["0,5 = 5%","0,05 = 50%","5,0 = 5%"],"{5/100} = 0,05 = 5%."],
+["Desimal 0,6 jika ditulis dalam pecahan persepuluh adalah ...","{6/10}",["{6/100}","{1/6}","{60/10}"],"0,6 punya satu angka di belakang koma, maka 0,6 = {6/10}."],
+["Desimal 0,08 jika ditulis dalam pecahan perseratus adalah ...","{8/100}",["{8/10}","{80/100}","{8/1000}"],"0,08 punya dua angka di belakang koma, maka 0,08 = {8/100}."],
+["Desimal 0,35 sama dengan pecahan ...","{35/100}",["{35/10}","{53/100}","{3/100}"],"0,35 = tiga puluh lima perseratus = {35/100}."],
+["45% jika ditulis dalam pecahan perseratus adalah ...","{45/100}",["{45/10}","{54/100}","{4/10}"],"45% berarti 45 per 100, yaitu {45/100}."],
+["80% jika ditulis dalam pecahan persepuluh adalah ...","{8/10}",["{80/10}","{8/100}","{1/8}"],"80% = {80/100}. Bagi pembilang dan penyebut dengan 10 sehingga menjadi {8/10}."],
+["Lahan parkir sudah terisi {6/10} bagian. Berapa persen lahan yang terisi?","60%",["6%","16%","0,6%"],"{6/10} = {60/100} = 60%."],
+["Desimal dari 12% adalah ...","0,12",["1,2","0,012","12,0"],"12% = {12/100} = 0,12."],
+["Kendaraan sudah mengisi 0,4 bagian lahan parkir. Bentuk pecahan persepuluh dan persennya adalah ...","{4/10} = 40%",["{4/100} = 4%","{4/10} = 4%","{4/100} = 40%"],"0,4 = {4/10} = {40/100} = 40%."],
+["Pecahan {75/100} jika ditulis dalam desimal dan persen adalah ...","0,75 = 75%",["0,075 = 75%","7,5 = 75%","0,75 = 7,5%"],"{75/100} = 0,75 = 75%."]
+];
+const fmt=s=>s.replace(/\{(\d+)\/(\d+)\}/g,'<span class="fr"><b>$1</b><i>$2</i></span>');
+const $=id=>document.getElementById(id);
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const CARS=['#e0457b','#2f8be0','#27a96b','#f39c12','#9b59d0','#e74c3c','#16a085','#f1c40f','#e67e22','#3498db','#d35400','#8e44ad','#c0392b','#1abc9c','#ff6f91'];
+
+/* suara */
+let AC;
+function beep(f,d,t,v){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.value=v||.15;o.connect(g);g.connect(AC.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d);o.stop(AC.currentTime+d)}catch(e){}}
+const sfx={
+ engine(){for(let i=0;i<8;i++)setTimeout(()=>beep(90+i*8,.12,'sawtooth',.06),i*110)},
+ ok(){beep(520,.18,'square',.1);setTimeout(()=>beep(520,.3,'square',.1),220);setTimeout(()=>[659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,.25,'triangle'),i*90)),500)},
+ bad(){beep(160,.5,'sawtooth',.25);setTimeout(()=>beep(90,.5,'square',.2),120)},
+ click(){beep(700,.08,'square',.08)},
+ end(){[523,659,784,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,.3,'triangle'),i*140))}
+};
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$(id).classList.add('on')}
+
+/* kamera & tangan */
+let camOn=false,hands=null,tx=innerWidth/2,ty=innerHeight/2,cx=tx,cy=ty;
+const vid=$('vid'),ov=$('ov'),octx=ov.getContext('2d'),cur=$('cur');
+async function startCam(){
+ const m=$('camMsg');
+ if(camOn){m.textContent='✅ Kamera sudah aktif.';return}
+ if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){m.style.color='#ffb3b3';m.textContent='⚠ Kamera butuh HTTPS atau localhost. Kamu tetap bisa main dengan mouse/sentuh.';return}
+ if(typeof Hands==='undefined'){m.style.color='#ffb3b3';m.textContent='⚠ Pustaka pelacak tangan gagal dimuat (cek internet). Main dengan mouse/sentuh.';return}
+ try{
+  m.style.color='#9dffb0';m.textContent='Meminta izin kamera...';
+  const st=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:640,height:480},audio:false});
+  vid.srcObject=st;await vid.play();
+  hands=new Hands({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/${f}`});
+  hands.setOptions({maxNumHands:1,modelComplexity:0,minDetectionConfidence:.6,minTrackingConfidence:.5});
+  hands.onResults(onHand);
+  m.textContent='Memuat model tangan...';
+  await hands.initialize();
+  camOn=true;$('cam').style.display='block';cur.style.display='block';
+  m.textContent='✅ Kamera aktif! Angkat telunjukmu.';
+  $('bCam').textContent='📷 Kamera Aktif ✔';
+  (async function loop(){if(!camOn)return;try{if(vid.readyState>=2)await hands.send({image:vid})}catch(e){}requestAnimationFrame(loop)})();
+ }catch(e){
+  m.style.color='#ffb3b3';
+  m.textContent=(e&&e.name==='NotAllowedError')?'⚠ Izin kamera ditolak. Izinkan kamera di pengaturan browser, atau main dengan mouse/sentuh.':'⚠ Kamera tidak dapat dibuka. Main dengan mouse/sentuh.';
+ }
+}
+function onHand(r){
+ octx.clearRect(0,0,320,240);
+ if(!r.multiHandLandmarks||!r.multiHandLandmarks.length)return;
+ const lm=r.multiHandLandmarks[0];
+ octx.fillStyle='#7be8ff';
+ lm.forEach(p=>{octx.beginPath();octx.arc(p.x*320,p.y*240,3,0,7);octx.fill()});
+ const t=lm[8];octx.fillStyle='#ff4136';octx.beginPath();octx.arc(t.x*320,t.y*240,7,0,7);octx.fill();
+ const nx=Math.min(1,Math.max(0,((1-t.x)-.12)/.76)),ny=Math.min(1,Math.max(0,(t.y-.1)/.7));
+ tx=nx*innerWidth;ty=ny*innerHeight;
+}
+addEventListener('pointermove',e=>{if(!camOn){tx=cx=e.clientX;ty=cy=e.clientY}});
+
+/* dwell */
+let hovEl=null,hovT=0,prev=performance.now();
+function frame(now){
+ const dt=Math.min(60,now-prev);prev=now;
+ if(camOn){
+  cx+=(tx-cx)*.3;cy+=(ty-cy)*.3;
+  cur.style.left=cx+'px';cur.style.top=cy+'px';
+  const el=document.elementFromPoint(cx,cy),b=el&&el.closest('.btn,.ans');
+  const ok=b&&!b.disabled&&b.getClientRects().length>0;
+  if(ok){
+   if(b!==hovEl){if(hovEl)hovEl.classList.remove('hov');hovEl=b;hovT=0;b.classList.add('hov')}
+   hovT+=dt;cur.style.setProperty('--p',Math.min(100,hovT/11));
+   if(hovT>=1100){hovT=0;b.classList.remove('hov');hovEl=null;cur.style.setProperty('--p',0);sfx.click();b.click()}
+  }else{if(hovEl)hovEl.classList.remove('hov');hovEl=null;hovT=0;cur.style.setProperty('--p',0)}
+ }
+ requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+/* game */
+const MAXLIFE=5;
+let idx=0,score=0,lives=MAXLIFE,correct=0,locked=false,order=[];
+const nodePos=i=>3+(94*(i/15));
+function buildTrack(){
+ document.querySelectorAll('.node,.flag').forEach(n=>n.remove());
+ const t=$('track');
+ for(let i=1;i<=15;i++){const n=document.createElement('div');n.className='node';n.id='n'+i;n.style.left=nodePos(i)+'%';t.appendChild(n)}
+ const f=document.createElement('div');f.className='flag';f.style.left=nodePos(15)+'%';f.textContent='🏁';t.appendChild(f);
+}
+function hearts(){$('hearts').textContent='❤️'.repeat(lives)+'🖤'.repeat(MAXLIFE-lives)}
+function carHome(){
+ const car=$('car'),lot=$('lot'),road=$('road');
+ const lr=lot.getBoundingClientRect(),rr=road.getBoundingClientRect();
+ car.style.transition='none';car.style.setProperty('--r','0deg');
+ car.style.left=(lr.width/2)+'px';car.style.top=(rr.top-lr.top+rr.height/2)+'px';
+ void car.offsetWidth;car.style.transition='';
+}
+function startGame(){
+ idx=0;score=0;lives=MAXLIFE;correct=0;locked=false;order=Q.map((_,i)=>i);
+ buildTrack();$('ship').style.left=nodePos(0)+'%';$('fill').style.width='0';
+ $('sc').textContent=0;hearts();show('game');loadQ();
+}
+function loadQ(){
+ const q=Q[order[idx]];locked=false;
+ document.querySelectorAll('.cone').forEach(c=>c.remove());
+ $('pg').textContent=idx+1;$('qno').textContent='Kendaraan '+(idx+1)+' dari 15';
+ $('qtext').innerHTML=fmt(q[0]);
+ const all=shuffle([[q[1],true],...q[2].map(x=>[x,false])]);
+ const box=$('opts');box.innerHTML='';
+ all.forEach(([txt,isOk],i)=>{
+  const b=document.createElement('button');b.className='ans';b.dataset.ok=isOk?1:0;
+  b.innerHTML=`<span class="pk">P${i+1}</span><span>${fmt(txt)}</span>`;
+  b.onclick=()=>choose(b,isOk);box.appendChild(b);
+ });
+ $('car').style.setProperty('--c',CARS[idx%CARS.length]);
+ requestAnimationFrame(carHome);
+}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function drive(x,y){
+ const car=$('car'),x0=parseFloat(car.style.left),dx=x-x0;
+ if(Math.abs(dx)>6){ // belok di jalan: hadap kanan/kiri, lalu maju lurus
+  car.style.setProperty('--r',dx>0?'90deg':'-90deg');
+  await sleep(350);car.style.left=x+'px';await sleep(900);
+  car.style.setProperty('--r','0deg');await sleep(350);
+ }
+ car.style.top=y+'px';await sleep(1050); // maju ke depan (kap mobil menghadap atas)
+}
+async function choose(b,isOk){
+ if(locked)return;locked=true;
+ const q=Q[order[idx]],car=$('car'),lot=$('lot');
+ document.querySelectorAll('.ans').forEach(a=>a.disabled=true);
+ const lr=lot.getBoundingClientRect(),sr=b.getBoundingClientRect();
+ const sx=sr.left-lr.left+sr.width/2,half=car.offsetHeight/2,y0=parseFloat(car.style.top);
+ sfx.engine();
+ $('n'+(idx+1)).classList.add(isOk?'ok':'bad');
+ $('ship').style.left=nodePos(idx+1)+'%';$('fill').style.width=(94*((idx+1)/15))+'%';
+ let good=isOk;
+ if(isOk){
+  await drive(sx,Math.min(y0-5,sr.bottom-lr.top-half-8));
+  b.classList.add('right');score+=10;correct++;$('sc').textContent=score;sfx.ok();
+  await sleep(700);
+ }else{
+  const cone=document.createElement('div');cone.className='cone';cone.textContent='🚧';
+  cone.style.left=sx+'px';cone.style.top=(sr.bottom-lr.top+4)+'px';lot.appendChild(cone);
+  await drive(sx,Math.min(y0-5,sr.bottom-lr.top+half+14));
+  car.classList.add('shake');setTimeout(()=>car.classList.remove('shake'),550);
+  b.classList.add('wrong');lives--;hearts();sfx.bad();
+  document.querySelectorAll('.ans').forEach(a=>{if(a.dataset.ok==='1')a.classList.add('right')});
+  await sleep(900);
+ }
+ $('fbx').innerHTML='<b>Jawaban benar:</b> '+fmt(q[1])+'<br>'+fmt(q[3]);
+ $('fbcard').className=good?'':'bad';
+ $('fbt').textContent=good?'🎉 Benar! Parkir sempurna!':'💥 Menabrak kerucut!';
+ $('fb').classList.add('on');
+}
+function next(){
+ $('fb').classList.remove('on');
+ idx++;
+ if(idx>=15||lives<=0)return finish();
+ loadQ();
+}
+function finish(){
+ sfx.end();
+ const win=idx>=15&&lives>0;
+ $('eSc').textContent=score;$('eOk').textContent=correct;
+ const st=correct>=13?3:correct>=9?2:correct>=5?1:0;
+ $('endStars').textContent='⭐'.repeat(st)+'☆'.repeat(3-st);
+ $('endIcon').textContent=win?'🏆':'🚧';
+ $('endT').textContent=win?'Semua Kendaraan Terparkir!':'Nyawa Habis! Coba Lagi!';
+ $('eMsg').textContent=correct>=13?'Luar biasa! Kamu Juru Parkir Jagoan! 🏅':correct>=9?'Bagus sekali! Sedikit lagi jadi jagoan! 👍':'Ayo berlatih lagi, kamu pasti bisa! 💪';
+ show('s-end');
+}
+addEventListener('resize',()=>{if(!locked&&$('game').classList.contains('on'))carHome()});
+
+$('bCam').onclick=startCam;
+$('bHow').onclick=()=>{sfx.click();show('s-how')};
+$('bBack').onclick=()=>show('s-intro');
+$('bGo').onclick=()=>{sfx.click();startGame()};
+$('bNext').onclick=next;
+$('bAgain').onclick=startGame;
+$('bHome').onclick=()=>show('s-intro');
+</script>
+</body>
+</html>
